@@ -1,158 +1,157 @@
+maze 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Snake Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #222;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    canvas {
-      background: #111;
-      border: 2px solid white;
-      margin-top: 10px;
-      touch-action: none;
-    }
-
-    .controls {
-      margin-top: 10px;
-      display: grid;
-      grid-template-areas:
-        ". up ."
-        "left down right";
-      gap: 10px;
-    }
-
-    .btn {
-      background: #555;
-      color: white;
-      padding: 15px;
-      font-size: 20px;
-      border: none;
-      border-radius: 10px;
-      width: 60px;
-      height: 60px;
-    }
-
-    .up    { grid-area: up; }
-    .down  { grid-area: down; }
-    .left  { grid-area: left; }
-    .right { grid-area: right; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simple Maze Game</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #eee;
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  #maze {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-template-rows: repeat(10, 40px);
+    gap: 2px;
+    background: #333;
+    border: 4px solid #333;
+  }
+  .cell {
+    width: 40px;
+    height: 40px;
+    background: white;
+  }
+  .wall {
+    background: black;
+  }
+  .player {
+    background: blue;
+    transition: background 0.2s;
+  }
+  .exit {
+    background: green;
+  }
+  #message {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    color: green;
+  }
+</style>
 </head>
 <body>
-  <h1>🐍 Jhales Santiago</h1>
-  <canvas id="game"></canvas>
 
-  <div class="controls">
-    <button class="btn up">↑</button>
-    <button class="btn left">←</button>
-    <button class="btn down">↓</button>
-    <button class="btn right">→</button>
-  </div>
+<div>
+  <div id="maze"></div>
+  <div id="message"></div>
+</div>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+<script>
+  // Maze layout: 0 = path, 1 = wall, 2 = exit
+  // 10x10 grid
+  const mazeMap = [
+    [0,1,0,0,0,1,0,0,0,0],
+    [0,1,0,1,0,1,0,1,1,0],
+    [0,0,0,1,0,0,0,0,1,0],
+    [1,1,0,1,1,1,1,0,1,0],
+    [0,0,0,0,0,0,1,0,0,0],
+    [0,1,1,1,1,0,1,1,1,0],
+    [0,0,0,0,1,0,0,0,1,0],
+    [0,1,1,0,1,1,1,0,1,0],
+    [0,0,1,0,0,0,0,0,1,2], // 2 is exit
+    [1,0,0,0,1,1,1,0,0,0],
+  ];
 
-    // Responsive sizing
-    const screenSize = Math.min(window.innerWidth, window.innerHeight) * 0.8;
-    canvas.width = screenSize;
-    canvas.height = screenSize;
+  const maze = document.getElementById('maze');
+  const message = document.getElementById('message');
 
-    const gridSize = 20;
-    const tileCount = canvas.width / gridSize;
+  const rows = mazeMap.length;
+  const cols = mazeMap[0].length;
 
-    let snake = [{ x: 10, y: 10 }];
-    let food = { x: 5, y: 5 };
-    let velocity = { x: 0, y: 0 };
-    let score = 0;
-    let gameStarted = false;
+  // Player start position
+  let playerPos = { x: 0, y: 0 };
 
-    function handleDirection(dir) {
-      if (!gameStarted) {
-        gameStarted = true;
-        velocity = { x: 1, y: 0 };
+  // Build the maze grid
+  function buildMaze() {
+    maze.innerHTML = '';
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        if (mazeMap[y][x] === 1) {
+          cell.classList.add('wall');
+        } else if (mazeMap[y][x] === 2) {
+          cell.classList.add('exit');
+        }
+        cell.id = `cell-${x}-${y}`;
+        maze.appendChild(cell);
       }
+    }
+    updatePlayer();
+  }
 
-      if (dir === "up" && velocity.y === 0) velocity = { x: 0, y: -1 };
-      if (dir === "down" && velocity.y === 0) velocity = { x: 0, y: 1 };
-      if (dir === "left" && velocity.x === 0) velocity = { x: -1, y: 0 };
-      if (dir === "right" && velocity.x === 0) velocity = { x: 1, y: 0 };
+  // Update player's position in the grid
+  function updatePlayer() {
+    // Remove old player class
+    document.querySelectorAll('.player').forEach(c => c.classList.remove('player'));
+    // Add player class to new position
+    const playerCell = document.getElementById(`cell-${playerPos.x}-${playerPos.y}`);
+    playerCell.classList.add('player');
+  }
+
+  // Check if position is valid (inside grid and not a wall)
+  function canMove(x, y) {
+    if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
+    if (mazeMap[y][x] === 1) return false;
+    return true;
+  }
+
+  // Check if player reached exit
+  function checkExit(x, y) {
+    return mazeMap[y][x] === 2;
+  }
+
+  // Handle key presses for movement
+  window.addEventListener('keydown', e => {
+    let newX = playerPos.x;
+    let newY = playerPos.y;
+
+    switch(e.key) {
+      case 'ArrowUp':
+        newY--;
+        break;
+      case 'ArrowDown':
+        newY++;
+        break;
+      case 'ArrowLeft':
+        newX--;
+        break;
+      case 'ArrowRight':
+        newX++;
+        break;
+      default:
+        return; // Ignore other keys
     }
 
-    document.querySelector(".up").onclick = () => handleDirection("up");
-    document.querySelector(".down").onclick = () => handleDirection("down");
-    document.querySelector(".left").onclick = () => handleDirection("left");
-    document.querySelector(".right").onclick = () => handleDirection("right");
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowUp") handleDirection("up");
-      if (e.key === "ArrowDown") handleDirection("down");
-      if (e.key === "ArrowLeft") handleDirection("left");
-      if (e.key === "ArrowRight") handleDirection("right");
-    });
-
-    function gameLoop() {
-      if (!gameStarted) {
-        draw();
-        return;
-      }
-
-      const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
-
-      if (
-        head.x < 0 || head.x >= tileCount ||
-        head.y < 0 || head.y >= tileCount ||
-        snake.some(segment => segment.x === head.x && segment.y === head.y)
-      ) {
-        alert("Game Over! Score: " + score);
-        snake = [{ x: 10, y: 10 }];
-        velocity = { x: 0, y: 0 };
-        food = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
-        score = 0;
-        gameStarted = false;
-        return;
-      }
-
-      snake.unshift(head);
-
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        food = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
+    if (canMove(newX, newY)) {
+      playerPos = { x: newX, y: newY };
+      updatePlayer();
+      if (checkExit(newX, newY)) {
+        message.textContent = '🎉 You reached the exit! Congratulations!';
       } else {
-        snake.pop();
+        message.textContent = '';
       }
-
-      draw();
     }
+  });
 
-    function draw() {
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+  buildMaze();
+</script>
 
-      ctx.fillStyle = "#0f0";
-      snake.forEach(segment => {
-        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 1, gridSize - 1);
-      });
-
-      ctx.fillStyle = "#f00";
-      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 1, gridSize - 1);
-
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px sans-serif";
-      ctx.fillText("Score: " + score, 10, 20);
-    }
-
-    setInterval(gameLoop, 100);
-  </script>
 </body>
 </html>
