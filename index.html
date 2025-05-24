@@ -1,32 +1,38 @@
-maze 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simple Maze Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Mobile-Friendly Maze Game</title>
 <style>
   body {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 100vh;
-    background: #eee;
+    justify-content: center;
+    min-height: 100vh;
     margin: 0;
+    background: #eee;
     font-family: Arial, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   #maze {
     display: grid;
-    grid-template-columns: repeat(10, 40px);
-    grid-template-rows: repeat(10, 40px);
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
     gap: 2px;
     background: #333;
     border: 4px solid #333;
+    width: 90vw;
+    max-width: 400px;
+    aspect-ratio: 1 / 1;
+    margin-top: 10px;
   }
   .cell {
-    width: 40px;
-    height: 40px;
     background: white;
+    width: 100%;
+    height: 100%;
   }
   .wall {
     background: black;
@@ -39,22 +45,58 @@ maze
     background: green;
   }
   #message {
-    margin-top: 20px;
+    margin-top: 15px;
     font-size: 1.2rem;
     color: green;
+    min-height: 1.5em;
   }
+  /* Controls container */
+  #controls {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 60px 60px 60px;
+    grid-template-rows: 60px 60px 60px;
+    gap: 10px;
+    user-select: none;
+  }
+  button.control-btn {
+    background: #444;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    transition: background 0.2s;
+  }
+  button.control-btn:active {
+    background: #666;
+  }
+  /* Position arrow buttons */
+  #up { grid-column: 2; grid-row: 1; }
+  #left { grid-column: 1; grid-row: 2; }
+  #down { grid-column: 2; grid-row: 2; }
+  #right { grid-column: 3; grid-row: 2; }
 </style>
 </head>
 <body>
 
-<div>
-  <div id="maze"></div>
-  <div id="message"></div>
+<div id="maze"></div>
+<div id="message"></div>
+
+<div id="controls">
+  <button class="control-btn" id="up" aria-label="Move Up">⬆️</button>
+  <button class="control-btn" id="left" aria-label="Move Left">⬅️</button>
+  <button class="control-btn" id="down" aria-label="Move Down">⬇️</button>
+  <button class="control-btn" id="right" aria-label="Move Right">➡️</button>
 </div>
 
 <script>
-  // Maze layout: 0 = path, 1 = wall, 2 = exit
-  // 10x10 grid
   const mazeMap = [
     [0,1,0,0,0,1,0,0,0,0],
     [0,1,0,1,0,1,0,1,1,0],
@@ -64,7 +106,7 @@ maze
     [0,1,1,1,1,0,1,1,1,0],
     [0,0,0,0,1,0,0,0,1,0],
     [0,1,1,0,1,1,1,0,1,0],
-    [0,0,1,0,0,0,0,0,1,2], // 2 is exit
+    [0,0,1,0,0,0,0,0,1,2],
     [1,0,0,0,1,1,1,0,0,0],
   ];
 
@@ -74,21 +116,16 @@ maze
   const rows = mazeMap.length;
   const cols = mazeMap[0].length;
 
-  // Player start position
   let playerPos = { x: 0, y: 0 };
 
-  // Build the maze grid
   function buildMaze() {
     maze.innerHTML = '';
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        if (mazeMap[y][x] === 1) {
-          cell.classList.add('wall');
-        } else if (mazeMap[y][x] === 2) {
-          cell.classList.add('exit');
-        }
+        if (mazeMap[y][x] === 1) cell.classList.add('wall');
+        else if (mazeMap[y][x] === 2) cell.classList.add('exit');
         cell.id = `cell-${x}-${y}`;
         maze.appendChild(cell);
       }
@@ -96,49 +133,25 @@ maze
     updatePlayer();
   }
 
-  // Update player's position in the grid
   function updatePlayer() {
-    // Remove old player class
     document.querySelectorAll('.player').forEach(c => c.classList.remove('player'));
-    // Add player class to new position
     const playerCell = document.getElementById(`cell-${playerPos.x}-${playerPos.y}`);
     playerCell.classList.add('player');
   }
 
-  // Check if position is valid (inside grid and not a wall)
   function canMove(x, y) {
     if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
     if (mazeMap[y][x] === 1) return false;
     return true;
   }
 
-  // Check if player reached exit
   function checkExit(x, y) {
     return mazeMap[y][x] === 2;
   }
 
-  // Handle key presses for movement
-  window.addEventListener('keydown', e => {
-    let newX = playerPos.x;
-    let newY = playerPos.y;
-
-    switch(e.key) {
-      case 'ArrowUp':
-        newY--;
-        break;
-      case 'ArrowDown':
-        newY++;
-        break;
-      case 'ArrowLeft':
-        newX--;
-        break;
-      case 'ArrowRight':
-        newX++;
-        break;
-      default:
-        return; // Ignore other keys
-    }
-
+  function movePlayer(dx, dy) {
+    const newX = playerPos.x + dx;
+    const newY = playerPos.y + dy;
     if (canMove(newX, newY)) {
       playerPos = { x: newX, y: newY };
       updatePlayer();
@@ -148,7 +161,23 @@ maze
         message.textContent = '';
       }
     }
+  }
+
+  // Keyboard controls
+  window.addEventListener('keydown', e => {
+    switch(e.key) {
+      case 'ArrowUp': movePlayer(0, -1); break;
+      case 'ArrowDown': movePlayer(0, 1); break;
+      case 'ArrowLeft': movePlayer(-1, 0); break;
+      case 'ArrowRight': movePlayer(1, 0); break;
+    }
   });
+
+  // Touch buttons controls
+  document.getElementById('up').addEventListener('click', () => movePlayer(0, -1));
+  document.getElementById('down').addEventListener('click', () => movePlayer(0, 1));
+  document.getElementById('left').addEventListener('click', () => movePlayer(-1, 0));
+  document.getElementById('right').addEventListener('click', () => movePlayer(1, 0));
 
   buildMaze();
 </script>
