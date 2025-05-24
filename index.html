@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>Mobile-Friendly Maze Game</title>
+<title>Maze Game with Difficulty Levels</title>
 <style>
   body {
     display: flex;
@@ -49,6 +49,8 @@
     font-size: 1.2rem;
     color: green;
     min-height: 1.5em;
+    text-align: center;
+    max-width: 90vw;
   }
   /* Controls container */
   #controls {
@@ -97,7 +99,8 @@
 </div>
 
 <script>
-  const mazeMap = [
+  // Easy maze layout: 0 = path, 1 = wall, 2 = exit
+  const easyMaze = [
     [0,1,0,0,0,1,0,0,0,0],
     [0,1,0,1,0,1,0,1,1,0],
     [0,0,0,1,0,0,0,0,1,0],
@@ -110,13 +113,30 @@
     [1,0,0,0,1,1,1,0,0,0],
   ];
 
+  // Hard maze layout: more walls, trickier path
+  const hardMaze = [
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,0,0,0,0,1,0,0,1,0],
+    [1,1,1,1,0,1,0,1,1,0],
+    [1,0,0,1,0,0,0,1,0,0],
+    [1,0,1,1,1,1,0,1,0,1],
+    [1,0,1,0,0,0,0,1,0,1],
+    [1,0,1,0,1,1,1,1,0,1],
+    [1,0,1,0,1,0,0,0,0,1],
+    [1,0,1,0,1,0,1,1,0,2],
+    [1,0,0,0,1,0,0,0,0,1],
+  ];
+
   const maze = document.getElementById('maze');
   const message = document.getElementById('message');
 
-  const rows = mazeMap.length;
-  const cols = mazeMap[0].length;
+  const rows = 10;
+  const cols = 10;
 
+  let currentMaze = easyMaze;
   let playerPos = { x: 0, y: 0 };
+  let round = 1;
+  let gameActive = true;
 
   function buildMaze() {
     maze.innerHTML = '';
@@ -124,8 +144,8 @@
       for (let x = 0; x < cols; x++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        if (mazeMap[y][x] === 1) cell.classList.add('wall');
-        else if (mazeMap[y][x] === 2) cell.classList.add('exit');
+        if (currentMaze[y][x] === 1) cell.classList.add('wall');
+        else if (currentMaze[y][x] === 2) cell.classList.add('exit');
         cell.id = `cell-${x}-${y}`;
         maze.appendChild(cell);
       }
@@ -136,27 +156,43 @@
   function updatePlayer() {
     document.querySelectorAll('.player').forEach(c => c.classList.remove('player'));
     const playerCell = document.getElementById(`cell-${playerPos.x}-${playerPos.y}`);
-    playerCell.classList.add('player');
+    if (playerCell) playerCell.classList.add('player');
   }
 
   function canMove(x, y) {
     if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
-    if (mazeMap[y][x] === 1) return false;
+    if (currentMaze[y][x] === 1) return false;
     return true;
   }
 
   function checkExit(x, y) {
-    return mazeMap[y][x] === 2;
+    return currentMaze[y][x] === 2;
   }
 
   function movePlayer(dx, dy) {
+    if (!gameActive) return;
     const newX = playerPos.x + dx;
     const newY = playerPos.y + dy;
     if (canMove(newX, newY)) {
       playerPos = { x: newX, y: newY };
       updatePlayer();
       if (checkExit(newX, newY)) {
-        message.textContent = '🎉 You reached the exit! Congratulations!';
+        if (round === 1) {
+          // Move to hard maze
+          round = 2;
+          message.textContent = '✅ Round 1 complete! Now try the harder maze!';
+          gameActive = false;
+          setTimeout(() => {
+            currentMaze = hardMaze;
+            playerPos = { x: 0, y: 0 };
+            buildMaze();
+            message.textContent = 'Round 2: Hard Maze! Good luck!';
+            gameActive = true;
+          }, 2500);
+        } else if (round === 2) {
+          message.textContent = '🎉 You completed the hard maze! Well done!';
+          gameActive = false;
+        }
       } else {
         message.textContent = '';
       }
