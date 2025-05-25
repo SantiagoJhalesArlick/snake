@@ -101,11 +101,11 @@
 <div id="message"></div>
 
 <div id="controls">
-  <button class="control-btn" id="up" aria-label="Move Up">⬆️</button>
-  <button class="control-btn" id="left" aria-label="Move Left">⬅️</button>
-  <button class="control-btn" id="down" aria-label="Move Down">⬇️</button>
-  <button class="control-btn" id="right" aria-label="Move Right">➡️</button>
-  <button class="control-btn" id="showSolution" aria-label="Show Solution">💡 Show Solution</button>
+  <button class="control-btn" id="up" aria-label="Move Up">↑</button>
+  <button class="control-btn" id="left" aria-label="Move Left">←</button>
+  <button class="control-btn" id="down" aria-label="Move Down">↓</button>
+  <button class="control-btn" id="right" aria-label="Move Right">→</button>
+  <button class="control-btn" id="showSolution" aria-label="Show Solution">💡 </button>
 </div>
 
 <script>
@@ -249,7 +249,7 @@
       [0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0],
       [0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0],
       [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0],
-      [0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1],
       [0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0],
       [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
       [0,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0],
@@ -503,7 +503,7 @@
 
   // Initialize the first maze on load
   buildMaze();
-  messageElement.textContent = `Level ${currentLevelIndex + 1}: EASY Maze! Good luck!`;
+  messageElement.textContent = `Level ${currentLevelIndex + 1}: Easy`;
 </script>
 
 </body>
