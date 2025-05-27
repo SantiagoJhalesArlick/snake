@@ -1,510 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>Ultimate Maze Challenge</title>
-<style>
-  body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    margin: 0;
-    background: #eee;
-    font-family: Arial, sans-serif;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  #maze {
-    display: grid;
-    /* grid-template-columns and rows will be set by JS */
-    gap: 2px;
-    background: #333;
-    border: 4px solid #333;
-    width: 90vw;
-    max-width: 400px; /* Base max-width for 10x10. Will be adjusted by JS for larger mazes */
-    aspect-ratio: 1 / 1;
-    margin-top: 10px;
-    transition: max-width 0.5s ease-in-out; /* Smooth transition for maze size changes */
-  }
-  .cell {
-    background: white;
-    width: 100%;
-    height: 100%;
-  }
-  .wall {
-    background: black;
-  }
-  .player {
-    background: blue;
-    transition: background 0.2s;
-  }
-  .exit {
-    background: green;
-  }
-  .solution-path {
-    background: #FFD700; /* Gold color for the path */
-  }
-  #message {
-    margin-top: 15px;
-    font-size: 1.2rem;
-    color: green;
-    min-height: 1.5em;
-    text-align: center;
-    max-width: 90vw;
-  }
-  /* Controls container */
-  #controls {
-    margin-top: 20px;
-    display: grid;
-    grid-template-columns: repeat(3, 60px);
-    grid-template-rows: 60px 60px 60px;
-    gap: 10px;
-    user-select: none;
-  }
-  button.control-btn {
-    background: #444;
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: manipulation;
-    transition: background 0.2s;
-  }
-  button.control-btn:active {
-    background: #666;
-  }
-  /* Position arrow buttons */
-  #up { grid-column: 2; grid-row: 1; }
-  #left { grid-column: 1; grid-row: 2; }
-  #down { grid-column: 2; grid-row: 2; }
-  #right { grid-column: 3; grid-row: 2; }
-  /* Position for the new solution button */
-  #showSolution { 
-    grid-column: 1 / span 3;
-    grid-row: 3; 
-    font-size: 1.1rem;
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Maze Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column; /* Stacks elements vertically */
+            align-items: center;
+            font-family: sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            min-height: 100vh; /* Ensures body takes full viewport height */
+            justify-content: center; /* Centers content vertically */
+        }
+        #controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px; /* Add margin to separate from maze */
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 10px;
+            font-size: 1.5rem; /* Increased font size for icon and better touch targets */
+            background-color: #222;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #444;
+        }
+        #maze {
+            display: grid;
+            gap: 2px;
+            margin-top: 20px; /* Keep consistent with body flex-direction */
+            background-color: #333; /* Darker background for maze structure */
+            border: 2px solid #555; /* A subtle border around the maze grid */
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #eee; /* Changed from #444 to light gray */
+        }
+        .wall {
+            background-color: black;
+        }
+        .player {
+            background-color: #42a5f5; /* Bright blue player, for contrast */
+            box-shadow: 0 0 5px #42a5f5; /* Glow effect */
+        }
+        .exit {
+            background-color: green;
+        }
+        .solution-path {
+            background-color: yellow;
+            opacity: 0.7; /* Make solution path slightly transparent */
+        }
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #ffeb3b; /* Bright message color */
+            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+        #top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+        @media (max-width: 600px) {
+            .cell {
+                width: 30px;
+                height: 30px;
+            }
+            button {
+                font-size: 1.2rem; /* Adjust button size for smaller screens */
+                padding: 8px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div id="maze"></div>
-<div id="message"></div>
+    <div id="top-left">
+        <button id="showSolution" title="Show Solution">💡</button>
+    </div>
 
-<div id="controls">
-  <button class="control-btn" id="up" aria-label="Move Up">↑</button>
-  <button class="control-btn" id="left" aria-label="Move Left">←</button>
-  <button class="control-btn" id="down" aria-label="Move Down">↓</button>
-  <button class="control-btn" id="right" aria-label="Move Right">→</button>
-  <button class="control-btn" id="showSolution" aria-label="Show Solution">💡 </button>
-</div>
+    <div id="maze"></div>
+    <div id="message"></div>
 
-<script>
-  // Maze layouts: 0 = path, 1 = wall, 2 = exit
-  // Exit is always at (cols-1, rows-2) for consistency (e.g., (9,8) for 10x10, (11,10) for 12x12, (14,13) for 15x15, (19,18) for 20x20)
-  const mazes = [
-    // Level 1: Very Easy (10x10) - Still easy, but with a slight bend
-    [
-      [0,0,0,0,0,0,0,0,0,0],
-      [1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,1,2],
-      [1,1,1,1,1,1,1,0,0,0],
-    ],
-    // Level 2: Easy (10x10) - Original, but with more dead ends
-    [
-      [0,0,0,1,0,0,0,1,0,0],
-      [0,1,0,1,0,1,0,1,0,1],
-      [0,1,0,1,0,1,0,0,0,1],
-      [0,1,0,1,0,1,1,1,0,1],
-      [0,1,0,0,0,0,0,0,0,1],
-      [0,1,1,1,1,1,1,1,0,1],
-      [0,0,0,0,0,0,0,1,0,1],
-      [1,1,1,1,1,1,0,1,0,1],
-      [0,0,0,0,0,0,0,1,0,2],
-      [1,1,1,0,0,0,0,1,0,1],
-    ],
-    // Level 3: Easy-Medium (10x10) - Original, slightly more winding
-    [
-      [0,0,0,0,0,1,0,0,0,0],
-      [0,1,1,1,0,1,0,1,1,0],
-      [0,0,0,1,0,0,0,0,1,0],
-      [1,1,0,1,1,1,1,0,1,0],
-      [0,0,0,0,0,0,1,0,0,0],
-      [0,1,1,1,1,0,1,1,1,0],
-      [0,0,0,0,1,0,0,0,1,0],
-      [0,1,1,0,1,1,1,0,1,0],
-      [0,0,1,0,0,0,0,0,1,2], 
-      [1,0,0,0,1,1,1,0,0,0],
-    ],
-    // Level 4: Medium (10x10) - More open sections that are actually dead ends
-    [
-      [0,0,1,0,0,0,0,0,0,0],
-      [0,1,0,0,1,1,1,1,1,0],
-      [0,1,0,1,0,0,0,0,0,0],
-      [0,1,0,1,0,1,1,1,1,0],
-      [0,1,0,0,0,1,0,0,0,0],
-      [0,1,1,1,0,1,0,1,1,0],
-      [0,0,0,1,0,1,0,0,0,0],
-      [0,1,0,1,0,1,1,1,1,0],
-      [0,1,0,0,0,0,0,0,1,2],
-      [0,0,0,1,1,1,1,0,0,0],
-    ],
-    // Level 5: Medium (10x10) - Repetitive zig-zag, can lose track easily
-    [
-      [0,0,0,0,0,1,0,0,0,0],
-      [0,1,0,1,0,1,0,1,0,1],
-      [0,0,0,1,0,0,0,1,0,0],
-      [1,1,0,1,1,0,1,1,0,1],
-      [0,0,0,0,0,0,1,0,0,0],
-      [0,1,1,1,0,1,1,1,1,0],
-      [0,0,0,1,0,0,0,0,0,0],
-      [0,1,0,1,0,1,1,1,1,0],
-      [0,1,0,0,0,0,0,0,1,2],
-      [0,0,0,1,1,1,1,0,0,0],
-    ],
-    // Level 6: Hard (10x10) - Increased dead ends and "false" open areas
-    [
-      [0,0,1,0,0,1,0,0,0,0],
-      [0,1,0,0,1,1,0,1,1,0],
-      [0,1,0,1,0,0,0,0,1,0],
-      [0,1,0,1,0,1,1,0,1,0],
-      [0,1,0,0,0,0,1,0,0,0],
-      [0,1,1,1,1,0,1,1,1,0],
-      [0,0,0,0,1,0,0,0,1,0],
-      [0,1,1,0,1,1,1,0,1,0],
-      [0,0,1,0,0,0,0,0,1,2], 
-      [1,0,0,0,1,1,1,0,0,0],
-    ],
-    // Level 7: HARDER (12x12) - Focus on many intersecting paths making it hard to eyeball the route
-    [
-      [0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,0,1,1,1,1,0],
-      [0,0,0,0,0,1,0,0,0,0,1,0],
-      [0,1,0,1,0,1,1,1,0,1,1,0],
-      [0,1,0,1,0,0,0,0,0,1,0,0],
-      [0,1,0,1,1,1,1,1,1,1,0,1],
-      [0,1,0,0,0,0,0,0,0,0,0,1],
-      [0,1,1,1,1,1,1,1,1,1,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,1],
-      [0,1,0,1,1,1,1,1,1,1,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,2], // Exit (11,10)
-      [1,1,1,1,1,1,1,1,1,1,1,0],
-    ],
-    // Level 8: VERY HARD (12x12) - High density of walls, very narrow and winding paths
-    [
-      [0,0,1,0,0,0,0,1,0,0,0,0],
-      [0,1,0,0,1,1,0,1,0,1,1,0],
-      [0,1,0,1,0,1,0,1,0,0,1,0],
-      [0,1,0,1,0,1,0,1,1,0,1,0],
-      [0,1,0,1,0,0,0,0,0,0,1,0],
-      [0,1,0,1,1,1,1,1,1,1,1,0],
-      [0,1,0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,1,0],
-      [1,1,1,1,1,1,1,1,1,0,1,0],
-      [0,0,0,0,0,0,0,0,0,0,1,2], // Exit (11,10)
-      [0,1,1,1,1,1,1,1,1,0,0,0],
-    ],
-    // Level 9: EXTREMELY HARD (15x15) - Many false corridors, long detours, and visual traps.
-    [
-      [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,0,1,0,1,1,1,1,1,1,0],
-      [0,0,0,0,1,0,1,0,0,0,0,0,0,1,0],
-      [0,1,1,0,1,0,1,1,1,1,1,1,0,1,0],
-      [0,1,0,0,1,0,0,0,0,0,0,1,0,1,0],
-      [0,1,0,1,1,1,1,1,1,1,0,1,0,1,0],
-      [0,1,0,0,0,0,0,0,0,1,0,1,0,1,0],
-      [0,1,1,1,1,1,1,1,0,1,0,1,0,1,0],
-      [0,0,0,0,0,0,0,0,0,1,0,0,0,1,0],
-      [0,1,1,1,1,1,1,0,1,1,1,1,0,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,1,2], // Exit (14,13)
-    ],
-    // Level 10: PSYCHOTIC BOSS (20x20) - Max visual noise, deceptive pathways, and repetitive dead ends.
-    // This one will feel like a headache to solve without the solution.
-    [
-      [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-      [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      [0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0],
-      [0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,0,1,1,1,1,0,0,1,1,0,0,0,0,1,1,1,0],
-      [1,1,1,0,0,0,0,0,0,0,0,1,1,1,0,1,1,1,1,1],
-      [0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
-      [1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,0],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1],
-      [0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1],
-      [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      [0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,0],
-      [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2], // Exit (19,18)
-      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-    ]
-  ];
+    <div id="controls">
+        <button id="up">↑</button>
+        <button id="left">←</button>
+        <button id="down">↓</button>
+        <button id="right">→</button>
+    </div>
 
-  const mazeElement = document.getElementById('maze');
-  const messageElement = document.getElementById('message');
+    <script>
+        const mazes = [
+            // Level 1 (Original)
+            [
+                [0,0,0,1,0,0,0,0,0,0],
+                [1,1,0,1,0,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [0,1,1,1,1,1,1,0,1,0],
+                [0,0,0,0,0,0,1,0,1,0],
+                [1,1,1,1,1,0,1,0,1,0],
+                [0,0,0,0,1,0,1,0,1,0],
+                [0,1,1,0,1,0,1,0,1,0],
+                [0,1,2,0,0,0,0,0,0,0],
+                [0,1,1,1,1,1,1,1,1,0],
+            ],
+            // Level 2 (Original)
+            [
+                [0,1,0,0,0,1,0,0,0,0],
+                [0,1,0,1,0,1,0,1,1,0],
+                [0,0,0,1,0,0,0,0,0,1],
+                [1,1,0,1,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [0,1,1,1,1,1,1,0,1,0],
+                [0,1,0,0,0,0,0,0,1,0],
+                [0,1,0,1,1,1,1,1,1,0],
+                [0,1,0,0,0,0,0,0,1,2],
+                [1,0,0,1,1,1,1,0,0,0],
+            ],
+            // Level 3 (New)
+            [
+                [0,0,1,0,0,0,0,0,0,0],
+                [0,0,1,0,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [0,1,1,1,1,1,0,1,1,0],
+                [0,1,0,0,0,1,0,0,1,0],
+                [0,1,0,1,0,1,0,1,1,0],
+                [0,0,0,1,0,0,0,0,1,0],
+                [0,1,0,1,1,1,1,0,1,0],
+                [0,1,0,0,0,0,0,0,1,2],
+                [0,1,1,1,1,1,1,1,1,0],
+            ],
+            // Level 4 (New)
+            [
+                [0,0,0,0,1,0,0,0,0,0],
+                [0,1,1,0,1,0,1,1,0,0],
+                [0,1,0,0,1,0,1,0,0,0],
+                [0,1,0,1,1,0,1,0,1,0],
+                [0,1,0,0,0,0,1,0,1,0],
+                [0,1,1,1,1,0,1,0,1,0],
+                [0,0,0,0,0,0,1,0,1,0],
+                [1,1,1,1,1,1,1,0,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [2,1,1,1,1,1,1,1,1,0],
+            ],
+            // Level 5 (New)
+            [
+                [0,0,0,1,0,0,0,0,0,0],
+                [0,1,0,1,0,1,1,1,0,0],
+                [0,1,0,1,0,0,0,1,0,0],
+                [0,1,0,1,1,1,0,1,0,0],
+                [0,1,0,0,0,1,0,1,0,0],
+                [0,1,1,1,0,1,0,1,0,0],
+                [0,0,0,1,0,1,0,1,0,0],
+                [0,1,0,1,0,1,0,1,0,0],
+                [0,1,0,0,0,1,0,0,0,0],
+                [2,1,1,1,1,1,1,1,1,0],
+            ]
+        ];
 
-  let currentLevelIndex = 0;
-  let playerPos = { x: 0, y: 0 };
-  let gameActive = true;
-  let solutionVisible = false;
+        let currentLevel = 0;
+        let maze = mazes[currentLevel];
+        let rows = maze.length;
+        let cols = maze[0].length;
+        let playerPos = { x: 0, y: 0 };
 
-  // Global variables to store current maze dimensions
-  let currentRows;
-  let currentCols;
+        const mazeContainer = document.getElementById('maze');
+        const message = document.getElementById('message');
 
-  /**
-   * Finds the shortest path from a start point to an end point in a maze using Breadth-First Search (BFS).
-   * Assumes 0=path, 1=wall, 2=exit. Path can go through 0 or 2.
-   * @param {Array<Array<number>>} mazeLayout - The 2D array representing the maze.
-   * @param {{x: number, y: number}} start - The starting coordinates {x, y}.
-   * @param {{x: number, y: number}} end - The ending coordinates {x, y}.
-   * @returns {Array<{x: number, y: number}>|null} - An array of coordinates forming the path, or null if no path is found.
-   */
-  function findPath(mazeLayout, start, end) {
-      const numRows = mazeLayout.length;
-      const numCols = mazeLayout[0].length;
-      const queue = [];
-      const visited = new Set();
-      const parentMap = new Map();
+        function drawMaze() {
+            mazeContainer.innerHTML = '';
+            mazeContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            mazeContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            mazeContainer.style.maxWidth = `${cols * 40}px`; /* Base width */
+            mazeContainer.style.maxHeight = `${rows * 40}px`; /* Base height */
 
-      queue.push(start);
-      visited.add(`${start.x}-${start.y}`);
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    if (maze[y][x] === 1) cell.classList.add('wall');
+                    else if (maze[y][x] === 2) cell.classList.add('exit');
+                    if (playerPos.x === x && playerPos.y === y) cell.classList.add('player');
+                    cell.id = `cell-${x}-${y}`;
+                    mazeContainer.appendChild(cell);
+                }
+            }
+        }
 
-      const directions = [
-          { dx: 0, dy: -1 }, // Up
-          { dx: 0, dy: 1 },  // Down
-          { dx: -1, dy: 0 }, // Left
-          { dx: 1, dy: 0 }   // Right
-      ];
+        function movePlayer(dx, dy) {
+            // Prevent movement if a message is displayed (e.g., win message)
+            if (message.textContent.includes('You found the exit') || message.textContent.includes('Congratulations')) {
+                return;
+            }
 
-      while (queue.length > 0) {
-          const current = queue.shift();
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
 
-          if (current.x === end.x && current.y === end.y) {
-              const path = [];
-              let node = current;
-              while (node) {
-                  path.unshift(node);
-                  node = parentMap.get(`${node.x}-${node.y}`);
-              }
-              return path;
-          }
+            if (
+                newX >= 0 &&
+                newY >= 0 &&
+                newX < cols &&
+                newY < rows &&
+                maze[newY][newX] !== 1 // Cannot move into a wall (1)
+            ) {
+                playerPos = { x: newX, y: newY };
+                drawMaze();
 
-          for (const dir of directions) {
-              const newX = current.x + dir.dx;
-              const newY = current.y + dir.dy;
-              const newState = { x: newX, y: newY };
-              const stateKey = `${newX}-${newY}`;
+                if (maze[newY][newX] === 2) { // Player reached the exit (2)
+                    message.textContent = '🎉 You found the exit!';
+                    setTimeout(() => {
+                        currentLevel++;
+                        if (currentLevel < mazes.length) {
+                            // SCARY EFFECT / Level Transition messages
+                            if (currentLevel === 1) {
+                                document.body.style.backgroundColor = 'red';
+                                message.textContent = '👻 BOO! Level 2 Begins!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            } else if (currentLevel === 2) {
+                                document.body.style.backgroundColor = 'purple';
+                                message.textContent = '✨ Spooky! Level 3 Approaching!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            } else if (currentLevel === 3) {
+                                document.body.style.backgroundColor = 'darkblue';
+                                message.textContent = '🌌 Deeper into the labyrinth! Level 4!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            } else if (currentLevel === 4) {
+                                document.body.style.backgroundColor = 'darkgreen';
+                                message.textContent = '🌿 Final stretch! Level 5!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            }
 
-              if (newX >= 0 && newX < numCols && newY >= 0 && newY < numRows &&
-                  mazeLayout[newY][newX] !== 1 && // Must not be a wall (0 or 2 are valid path cells)
-                  !visited.has(stateKey)) {
-                  
-                  visited.add(stateKey);
-                  parentMap.set(stateKey, current);
-                  queue.push(newState);
-              }
-          }
-      }
-      return null; // Should not be reached if mazes are guaranteed solvable
-  }
+                            maze = mazes[currentLevel];
+                            rows = maze.length;
+                            cols = maze[0].length;
+                            playerPos = { x: 0, y: 0 }; // Reset player to start of new level
+                            drawMaze();
+                        } else {
+                            message.textContent = '🏁 Congratulations! You completed all levels!';
+                        }
+                    }, 1000); // Short delay before next level
+                }
+            }
+        }
 
-  /**
-   * Removes any previously displayed solution path from the maze.
-   */
-  function hideSolution() {
-    document.querySelectorAll('.solution-path').forEach(c => c.classList.remove('solution-path'));
-    solutionVisible = false;
-  }
+        // --- Solution Pathfinding (BFS) ---
+        function showSolution() {
+            // Clear previous solution path
+            document.querySelectorAll('.solution-path').forEach(cell => {
+                cell.classList.remove('solution-path');
+            });
 
-  /**
-   * Finds and displays the shortest solution path on the maze, always from (0,0) to exit.
-   */
-  function showSolution() {
-    if (!gameActive) return;
+            const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+            const prev = Array.from({ length: rows }, () => Array(cols).fill(null)); // To reconstruct path
+            const queue = [];
 
-    hideSolution(); // Clear any existing solution first
+            // Start BFS from player's current position
+            queue.push(playerPos);
+            visited[playerPos.y][playerPos.x] = true;
 
-    const solutionStart = { x: 0, y: 0 }; // Solution always starts from (0,0)
-    // The exit position is now dynamic based on current maze dimensions
-    const exitPos = { x: currentCols - 1, y: currentRows - 2 }; 
+            const directions = [
+                { x: 1, y: 0 }, // Right
+                { x: -1, y: 0 },// Left
+                { x: 0, y: 1 }, // Down
+                { x: 0, y: -1 },// Up
+            ];
 
-    const solutionPath = findPath(mazes[currentLevelIndex], solutionStart, exitPos);
+            let endNode = null; // To store the exit node
 
-    if (solutionPath) {
-        solutionPath.forEach(pos => {
-            const cell = document.getElementById(`cell-${pos.x}-${pos.y}`);
-            // Do not color the player's current position or the true exit cell as solution path
-            if (cell && !(pos.x === playerPos.x && pos.y === playerPos.y) && mazes[currentLevelIndex][pos.y][pos.x] !== 2) {
-                cell.classList.add('solution-path');
+            while (queue.length > 0) {
+                const current = queue.shift();
+
+                // If current node is the exit, we found a path
+                if (maze[current.y][current.x] === 2) {
+                    endNode = current;
+                    break;
+                }
+
+                for (const dir of directions) {
+                    const newX = current.x + dir.x;
+                    const newY = current.y + dir.y;
+
+                    // Check bounds, if not visited, and not a wall
+                    if (
+                        newX >= 0 && newX < cols &&
+                        newY >= 0 && newY < rows &&
+                        !visited[newY][newX] &&
+                        maze[newY][newX] !== 1
+                    ) {
+                        visited[newY][newX] = true;
+                        prev[newY][newX] = current; // Store previous node to reconstruct path
+                        queue.push({ x: newX, y: newY });
+                    }
+                }
+            }
+
+            // Reconstruct and display the path
+            if (endNode) {
+                let path = [];
+                let current = endNode;
+                // Trace back from the end to the start
+                while (current && (current.x !== playerPos.x || current.y !== playerPos.y)) {
+                    path.push(current);
+                    current = prev[current.y][current.x];
+                }
+                // Don't add the player's current cell to the solution path
+                // path.push(playerPos); // If you want to include the start cell
+
+                // Apply solution-path class to cells
+                for (const pos of path) {
+                    const cellEl = document.getElementById(`cell-${pos.x}-${pos.y}`);
+                    if (cellEl && !cellEl.classList.contains('player') && !cellEl.classList.contains('exit')) {
+                        cellEl.classList.add('solution-path');
+                    }
+                }
+            } else {
+                message.textContent = "No solution found from current position!";
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('up').addEventListener('click', () => movePlayer(0, -1));
+        document.getElementById('down').addEventListener('click', () => movePlayer(0, 1));
+        document.getElementById('left').addEventListener('click', () => movePlayer(-1, 0));
+        document.getElementById('right').addEventListener('click', () => movePlayer(1, 0));
+        document.getElementById('showSolution').addEventListener('click', showSolution);
+
+        // Keyboard controls (WASD and Arrow Keys)
+        document.addEventListener('keydown', (event) => {
+            // Prevent scrolling with arrow keys if playing the game
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                event.preventDefault();
+            }
+            switch (event.key) {
+                case 'ArrowUp':
+                case 'w':
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    movePlayer(1, 0);
+                    break;
             }
         });
-        messageElement.textContent = '💡 Solution path highlighted in gold from start!';
-        solutionVisible = true;
-    } else {
-        // This message should now only appear if a maze is truly unsolvable (which they shouldn't be).
-        messageElement.textContent = '🚨 ERROR: Maze unsolvable from start! Please report this bug.';
-        console.error("Critical Error: No solution found for current maze from (0,0)! Maze definition issue.");
-    }
-  }
 
-  /**
-   * Builds the maze grid based on the currentMaze layout.
-   */
-  function buildMaze() {
-    const currentMazeLayout = mazes[currentLevelIndex];
-    currentRows = currentMazeLayout.length;
-    currentCols = currentMazeLayout[0].length;
-
-    // Dynamically set grid properties
-    mazeElement.style.gridTemplateColumns = `repeat(${currentCols}, 1fr)`;
-    mazeElement.style.gridTemplateRows = `repeat(${currentRows}, 1fr)`;
-
-    // Adjust max-width based on maze size to keep it looking good
-    if (currentCols > 15) { // For 20x20 maze (Level 10)
-      mazeElement.style.maxWidth = '600px';
-    } else if (currentCols > 10) { // For 12x12 or 15x15 mazes (Levels 7-9)
-      mazeElement.style.maxWidth = '500px';
-    } else { // For 10x10 mazes (Levels 1-6)
-      mazeElement.style.maxWidth = '400px';
-    }
-
-    mazeElement.innerHTML = '';
-    hideSolution(); // Clear solution when building a new maze
-
-    for (let y = 0; y < currentRows; y++) {
-      for (let x = 0; x < currentCols; x++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        if (currentMazeLayout[y][x] === 1) cell.classList.add('wall');
-        else if (currentMazeLayout[y][x] === 2) cell.classList.add('exit');
-        cell.id = `cell-${x}-${y}`;
-        mazeElement.appendChild(cell);
-      }
-    }
-    updatePlayer();
-  }
-
-  /**
-   * Updates the player's visual position.
-   */
-  function updatePlayer() {
-    document.querySelectorAll('.player').forEach(c => c.classList.remove('player'));
-    const playerCell = document.getElementById(`cell-${playerPos.x}-${playerPos.y}`);
-    if (playerCell) playerCell.classList.add('player');
-  }
-
-  /**
-   * Checks if a move to (x, y) is valid (within bounds and not a wall).
-   */
-  function canMove(x, y) {
-    if (x < 0 || x >= currentCols || y < 0 || y >= currentRows) return false;
-    if (mazes[currentLevelIndex][y][x] === 1) return false;
-    return true;
-  }
-
-  /**
-   * Checks if the player has reached the exit.
-   */
-  function checkExit(x, y) {
-    return mazes[currentLevelIndex][y][x] === 2;
-  }
-
-  /**
-   * Handles player movement and level progression.
-   */
-  function movePlayer(dx, dy) {
-    if (!gameActive) return;
-
-    // Hide solution path if visible when player moves
-    if (solutionVisible) {
-        hideSolution();
-        messageElement.textContent = '';
-    }
-
-    const newX = playerPos.x + dx;
-    const newY = playerPos.y + dy;
-
-    if (canMove(newX, newY)) {
-      playerPos = { x: newX, y: newY };
-      updatePlayer();
-
-      if (checkExit(newX, newY)) {
-        currentLevelIndex++; // Advance to next level
-
-        if (currentLevelIndex < mazes.length) {
-          let levelType;
-          if (currentLevelIndex < 3) levelType = 'EASY';
-          else if (currentLevelIndex < 6) levelType = 'MEDIUM';
-          else if (currentLevelIndex < 9) levelType = 'HARD';
-          else levelType = 'FINAL BOSS';
-
-          messageElement.textContent = `✅ Level ${currentLevelIndex} Complete! Moving to ${levelType} Maze!`;
-          gameActive = false; // Pause game during transition
-          setTimeout(() => {
-            playerPos = { x: 0, y: 0 }; // Reset player position for new maze
-            buildMaze(); // Build the new maze
-            messageElement.textContent = `Level ${currentLevelIndex + 1}: ${levelType} Maze! Good luck!`;
-            gameActive = true; // Resume game
-          }, 2500);
-        } else {
-          // All levels completed
-          messageElement.textContent = '🎉 CONGRATULATIONS! You completed all 10 mazes! You are a MAZE MASTER!';
-          gameActive = false; // Game finished
-        }
-      } else {
-        // Clear success message if player moves away after completing a level
-        if (messageElement.textContent.includes('Complete') || messageElement.textContent.includes('Congratulations')) {
-            messageElement.textContent = '';
-        }
-      }
-    }
-  }
-
-  // --- Event Listeners ---
-  window.addEventListener('keydown', e => {
-    switch(e.key) {
-      case 'ArrowUp': movePlayer(0, -1); break;
-      case 'ArrowDown': movePlayer(0, 1); break;
-      case 'ArrowLeft': movePlayer(-1, 0); break;
-      case 'ArrowRight': movePlayer(1, 0); break;
-    }
-  });
-
-  document.getElementById('up').addEventListener('click', () => movePlayer(0, -1));
-  document.getElementById('down').addEventListener('click', () => movePlayer(0, 1));
-  document.getElementById('left').addEventListener('click', () => movePlayer(-1, 0));
-  document.getElementById('right').addEventListener('click', () => movePlayer(1, 0));
-  document.getElementById('showSolution').addEventListener('click', showSolution);
-
-  // Initialize the first maze on load
-  buildMaze();
-  messageElement.textContent = `Level ${currentLevelIndex + 1}: Easy`;
-</script>
-
+        // Initial draw of the first maze when the page loads
+        drawMaze();
+        message.textContent = 'Navigate the maze!';
+    </script>
 </body>
 </html>
