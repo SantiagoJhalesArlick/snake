@@ -17,12 +17,23 @@
             justify-content: center; /* Centers content vertically */
         }
         #controls {
-            display: flex;
-            gap: 10px;
+            display: grid; /* Changed to grid for D-pad layout */
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down ."; /* Defines a 3x3 grid, with '.' for empty cells */
+            gap: 10px; /* Spacing between buttons */
             margin-top: 20px; /* Add margin to separate from maze */
-            flex-wrap: wrap;
-            justify-content: center;
+            width: 180px; /* Adjust width of the control area as needed */
+            justify-content: center; /* Center the grid within its container */
+            align-items: center; /* Center items within grid cells */
         }
+        /* Assign grid areas to each button */
+        #up { grid-area: up; }
+        #left { grid-area: left; }
+        #down { grid-area: down; }
+        #right { grid-area: right; }
+
         button {
             padding: 10px;
             font-size: 1.5rem; /* Increased font size for icon and better touch targets */
@@ -32,6 +43,11 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.2s ease;
+            width: 50px; /* Fixed width for consistent button size */
+            height: 50px; /* Fixed height for consistent button size */
+            display: flex; /* Use flex to center text/icon inside button */
+            justify-content: center;
+            align-items: center;
         }
         button:hover {
             background-color: #444;
@@ -46,7 +62,7 @@
         .cell {
             width: 40px;
             height: 40px;
-            background-color: #eee; /* Changed from #444 to light gray */
+            background-color: #eee; /* Light gray path */
         }
         .wall {
             background-color: black;
@@ -83,6 +99,11 @@
             button {
                 font-size: 1.2rem; /* Adjust button size for smaller screens */
                 padding: 8px;
+                width: 40px; /* Adjust for smaller screens */
+                height: 40px; /* Adjust for smaller screens */
+            }
+            #controls {
+                width: 150px; /* Adjust control area width for smaller screens */
             }
         }
     </style>
@@ -160,13 +181,13 @@
             // Level 5 (New)
             [
                 [0,0,0,1,0,0,0,0,0,0],
-                [0,1,0,1,0,1,1,1,0,0],
-                [0,1,0,1,0,0,0,1,0,0],
-                [0,1,0,1,1,1,0,1,0,0],
-                [0,1,0,0,0,1,0,1,0,0],
-                [0,1,1,1,0,1,0,1,0,0],
-                [0,0,0,1,0,1,0,1,0,0],
-                [0,1,0,1,0,1,0,1,0,0],
+                [0,1,0,1,0,1,1,1,0,1],
+                [0,1,0,0,0,0,0,1,0,1],
+                [0,1,0,1,1,1,0,1,0,1],
+                [0,1,0,1,0,1,0,1,0,1],
+                [0,1,1,1,0,1,0,1,0,1],
+                [1,0,0,1,0,1,0,1,0,1],
+                [0,0,0,1,0,0,0,1,0,1],
                 [0,1,0,0,0,1,0,0,0,0],
                 [2,1,1,1,1,1,1,1,1,0],
             ]
