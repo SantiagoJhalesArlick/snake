@@ -1,160 +1,406 @@
-snake
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Snake Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #222;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Maze Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column; /* Stacks elements vertically */
+            align-items: center;
+            font-family: sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            min-height: 100vh; /* Ensures body takes full viewport height */
+            justify-content: center; /* Centers content vertically */
+        }
+        #controls {
+            display: grid; /* Changed to grid for D-pad layout */
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down ."; /* Defines a 3x3 grid, with '.' for empty cells */
+            gap: 10px; /* Spacing between buttons */
+            margin-top: 20px; /* Add margin to separate from maze */
+            width: 180px; /* Adjust width of the control area as needed */
+            justify-content: center; /* Center the grid within its container */
+            align-items: center; /* Center items within grid cells */
+        }
+        /* Assign grid areas to each button */
+        #up { grid-area: up; }
+        #left { grid-area: left; }
+        #down { grid-area: down; }
+        #right { grid-area: right; }
 
-    canvas {
-      background: #111;
-      border: 2px solid white;
-      margin-top: 10px;
-      touch-action: none;
-    }
-
-    .controls {
-      margin-top: 10px;
-      display: grid;
-      grid-template-areas:
-        ". up ."
-        "left down right";
-      gap: 10px;
-    }
-
-    .btn {
-      background: #555;
-      color: white;
-      padding: 15px;
-      font-size: 20px;
-      border: none;
-      border-radius: 10px;
-      width: 60px;
-      height: 60px;
-    }
-
-    .up    { grid-area: up; }
-    .down  { grid-area: down; }
-    .left  { grid-area: left; }
-    .right { grid-area: right; }
-  </style>
+        button {
+            padding: 10px;
+            font-size: 1.5rem; /* Increased font size for icon and better touch targets */
+            background-color: #222;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            width: 50px; /* Fixed width for consistent button size */
+            height: 50px; /* Fixed height for consistent button size */
+            display: flex; /* Use flex to center text/icon inside button */
+            justify-content: center;
+            align-items: center;
+        }
+        button:hover {
+            background-color: #444;
+        }
+        #maze {
+            display: grid;
+            gap: 2px;
+            margin-top: 20px; /* Keep consistent with body flex-direction */
+            background-color: #333; /* Darker background for maze structure */
+            border: 2px solid #555; /* A subtle border around the maze grid */
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #eee; /* Light gray path */
+        }
+        .wall {
+            background-color: black;
+        }
+        .player {
+            background-color: #42a5f5; /* Bright blue player, for contrast */
+            box-shadow: 0 0 5px #42a5f5; /* Glow effect */
+        }
+        .exit {
+            background-color: green;
+        }
+        .solution-path {
+            background-color: yellow;
+            opacity: 0.7; /* Make solution path slightly transparent */
+        }
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #ffeb3b; /* Bright message color */
+            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+        #top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+        @media (max-width: 600px) {
+            .cell {
+                width: 30px;
+                height: 30px;
+            }
+            button {
+                font-size: 1.2rem; /* Adjust button size for smaller screens */
+                padding: 8px;
+                width: 40px; /* Adjust for smaller screens */
+                height: 40px; /* Adjust for smaller screens */
+            }
+            #controls {
+                width: 150px; /* Adjust control area width for smaller screens */
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>🐍 Jhales Santiago</h1>
-  <canvas id="game"></canvas>
 
-  <div class="controls">
-    <button class="btn up">↑</button>
-    <button class="btn left">←</button>
-    <button class="btn down">↓</button>
-    <button class="btn right">→</button>
-  </div>
+    <div id="top-left">
+        <button id="showSolution" title="Show Solution">💡</button>
+    </div>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+    <div id="maze"></div>
+    <div id="message"></div>
 
-    // Responsive sizing
-    const screenSize = Math.min(window.innerWidth, window.innerHeight) * 0.8;
-    canvas.width = screenSize;
-    canvas.height = screenSize;
+    <div id="controls">
+        <button id="up">↑</button>
+        <button id="left">←</button>
+        <button id="down">↓</button>
+        <button id="right">→</button>
+    </div>
 
-    const gridSize = 20;
-    const tileCount = canvas.width / gridSize;
+    <script>
+        const mazes = [
+            // Level 1 (Original)
+            [
+                [0,0,0,1,0,0,0,0,0,0],
+                [1,1,0,1,0,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [0,1,1,1,1,1,1,0,1,0],
+                [0,0,0,0,0,0,1,0,1,0],
+                [1,1,1,1,1,0,1,0,1,0],
+                [0,0,0,0,1,0,1,0,1,0],
+                [0,1,1,0,1,0,1,0,1,0],
+                [0,1,2,0,0,0,0,0,0,0],
+                [0,1,1,1,1,1,1,1,1,0],
+            ],
+            // Level 2 (Original)
+            [
+                [0,1,0,0,0,1,0,0,0,0],
+                [0,1,0,1,0,1,0,1,1,0],
+                [0,0,0,1,0,0,0,0,0,1],
+                [1,1,0,1,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [0,1,1,1,1,1,1,0,1,0],
+                [0,1,0,0,0,0,0,0,1,0],
+                [0,1,0,1,1,1,1,1,1,0],
+                [0,1,0,0,0,0,0,0,1,2],
+                [1,0,0,1,1,1,1,0,0,0],
+            ],
+            // Level 3 (New)
+            [
+                [0,0,1,0,0,0,0,0,0,0],
+                [0,0,1,0,1,1,1,1,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [0,1,1,1,1,1,0,1,1,0],
+                [0,1,0,0,0,1,0,0,1,0],
+                [0,1,0,1,0,1,0,1,1,0],
+                [0,0,0,1,0,0,0,0,1,0],
+                [0,1,0,1,1,1,1,0,1,0],
+                [0,1,0,0,0,0,0,0,1,2],
+                [0,1,1,1,1,1,1,1,1,0],
+            ],
+            // Level 4 (New)
+            [
+                [0,0,0,0,1,0,0,0,0,0],
+                [0,1,1,0,1,0,1,1,0,0],
+                [0,1,0,0,1,0,1,0,0,0],
+                [0,1,0,1,1,0,1,0,1,0],
+                [0,1,0,0,0,0,1,0,1,0],
+                [0,1,1,1,1,0,1,0,1,0],
+                [0,0,0,0,0,0,1,0,1,0],
+                [1,1,1,1,1,1,1,0,1,0],
+                [0,0,0,0,0,0,0,0,1,0],
+                [2,1,1,1,1,1,1,1,1,0],
+            ],
+            // Level 5 (New)
+            [
+                [0,0,0,1,0,0,0,0,0,0],
+                [0,1,0,1,0,1,1,1,0,1],
+                [0,1,0,0,0,0,0,1,0,1],
+                [0,1,0,1,1,1,0,1,0,1],
+                [0,1,0,1,0,1,0,1,0,1],
+                [0,1,1,1,0,1,0,1,0,1],
+                [1,0,0,1,0,1,0,1,0,1],
+                [0,0,0,1,0,0,0,1,0,1],
+                [0,1,0,0,0,1,0,0,0,0],
+                [2,1,1,1,1,1,1,1,1,0],
+            ]
+        ];
 
-    let snake = [{ x: 10, y: 10 }];
-    let food = { x: 5, y: 5 };
-    let velocity = { x: 0, y: 0 };
-    let score = 0;
-    let gameStarted = false;
+        let currentLevel = 0;
+        let maze = mazes[currentLevel];
+        let rows = maze.length;
+        let cols = maze[0].length;
+        let playerPos = { x: 0, y: 0 };
 
-    function handleDirection(dir) {
-      if (!gameStarted) {
-        gameStarted = true;
-        velocity = { x: 1, y: 0 };
-      }
+        const mazeContainer = document.getElementById('maze');
+        const message = document.getElementById('message');
 
-      if (dir === "up" && velocity.y === 0) velocity = { x: 0, y: -1 };
-      if (dir === "down" && velocity.y === 0) velocity = { x: 0, y: 1 };
-      if (dir === "left" && velocity.x === 0) velocity = { x: -1, y: 0 };
-      if (dir === "right" && velocity.x === 0) velocity = { x: 1, y: 0 };
-    }
+        function drawMaze() {
+            mazeContainer.innerHTML = '';
+            mazeContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            mazeContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            mazeContainer.style.maxWidth = `${cols * 40}px`; /* Base width */
+            mazeContainer.style.maxHeight = `${rows * 40}px`; /* Base height */
 
-    document.querySelector(".up").onclick = () => handleDirection("up");
-    document.querySelector(".down").onclick = () => handleDirection("down");
-    document.querySelector(".left").onclick = () => handleDirection("left");
-    document.querySelector(".right").onclick = () => handleDirection("right");
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    if (maze[y][x] === 1) cell.classList.add('wall');
+                    else if (maze[y][x] === 2) cell.classList.add('exit');
+                    if (playerPos.x === x && playerPos.y === y) cell.classList.add('player');
+                    cell.id = `cell-${x}-${y}`;
+                    mazeContainer.appendChild(cell);
+                }
+            }
+        }
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowUp") handleDirection("up");
-      if (e.key === "ArrowDown") handleDirection("down");
-      if (e.key === "ArrowLeft") handleDirection("left");
-      if (e.key === "ArrowRight") handleDirection("right");
-    });
+        function movePlayer(dx, dy) {
+            // Prevent movement if a message is displayed (e.g., win message)
+            if (message.textContent.includes('You found the exit') || message.textContent.includes('Congratulations')) {
+                return;
+            }
 
-    function gameLoop() {
-      if (!gameStarted) {
-        draw();
-        return;
-      }
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
 
-      const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+            if (
+                newX >= 0 &&
+                newY >= 0 &&
+                newX < cols &&
+                newY < rows &&
+                maze[newY][newX] !== 1 // Cannot move into a wall (1)
+            ) {
+                playerPos = { x: newX, y: newY };
+                drawMaze();
 
-      if (
-        head.x < 0 || head.x >= tileCount ||
-        head.y < 0 || head.y >= tileCount ||
-        snake.some(segment => segment.x === head.x && segment.y === head.y)
-      ) {
-        alert("Game Over! Score: " + score);
-        snake = [{ x: 10, y: 10 }];
-        velocity = { x: 0, y: 0 };
-        food = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
-        score = 0;
-        gameStarted = false;
-        return;
-      }
+                if (maze[newY][newX] === 2) { // Player reached the exit (2)
+                    message.textContent = '🎉 You found the exit!';
+                    setTimeout(() => {
+                        currentLevel++;
+                        if (currentLevel < mazes.length) {
+                            // SCARY EFFECT / Level Transition messages
+                            if (currentLevel === 1) {
+                                document.body.style.backgroundColor = 'red';
+                                message.textContent = '👻 BOO! Level 2 Begins!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            } else if (currentLevel === 2) {
+                                document.body.style.backgroundColor = 'purple';
+                                message.textContent = '✨ Spooky! Level 3 Approaching!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            } else if (currentLevel === 3) {
+                                document.body.style.backgroundColor = 'darkblue';
+                                message.textContent = '🌌 Deeper into the labyrinth! Level 4!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            } else if (currentLevel === 4) {
+                                document.body.style.backgroundColor = 'darkgreen';
+                                message.textContent = '🌿 Final stretch! Level 5!';
+                                setTimeout(() => {
+                                    document.body.style.backgroundColor = '#000';
+                                    message.textContent = '';
+                                }, 1000);
+                            }
 
-      snake.unshift(head);
+                            maze = mazes[currentLevel];
+                            rows = maze.length;
+                            cols = maze[0].length;
+                            playerPos = { x: 0, y: 0 }; // Reset player to start of new level
+                            drawMaze();
+                        } else {
+                            message.textContent = '🏁 Congratulations! You completed all levels!';
+                        }
+                    }, 1000); // Short delay before next level
+                }
+            }
+        }
 
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        food = { x: Math.floor(Math.random() * tileCount), y: Math.floor(Math.random() * tileCount) };
-      } else {
-        snake.pop();
-      }
+        // --- Solution Pathfinding (BFS) ---
+        function showSolution() {
+            // Clear previous solution path
+            document.querySelectorAll('.solution-path').forEach(cell => {
+                cell.classList.remove('solution-path');
+            });
 
-      draw();
-    }
+            const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+            const prev = Array.from({ length: rows }, () => Array(cols).fill(null)); // To reconstruct path
+            const queue = [];
 
-    function draw() {
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Start BFS from player's current position
+            queue.push(playerPos);
+            visited[playerPos.y][playerPos.x] = true;
 
-      ctx.fillStyle = "#0f0";
-      snake.forEach(segment => {
-        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 1, gridSize - 1);
-      });
+            const directions = [
+                { x: 1, y: 0 }, // Right
+                { x: -1, y: 0 },// Left
+                { x: 0, y: 1 }, // Down
+                { x: 0, y: -1 },// Up
+            ];
 
-      ctx.fillStyle = "#f00";
-      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 1, gridSize - 1);
+            let endNode = null; // To store the exit node
 
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px sans-serif";
-      ctx.fillText("Score: " + score, 10, 20);
-    }
+            while (queue.length > 0) {
+                const current = queue.shift();
 
-    setInterval(gameLoop, 100);
-  </script>
+                // If current node is the exit, we found a path
+                if (maze[current.y][current.x] === 2) {
+                    endNode = current;
+                    break;
+                }
+
+                for (const dir of directions) {
+                    const newX = current.x + dir.x;
+                    const newY = current.y + dir.y;
+
+                    // Check bounds, if not visited, and not a wall
+                    if (
+                        newX >= 0 && newX < cols &&
+                        newY >= 0 && newY < rows &&
+                        !visited[newY][newX] &&
+                        maze[newY][newX] !== 1
+                    ) {
+                        visited[newY][newX] = true;
+                        prev[newY][newX] = current; // Store previous node to reconstruct path
+                        queue.push({ x: newX, y: newY });
+                    }
+                }
+            }
+
+            // Reconstruct and display the path
+            if (endNode) {
+                let path = [];
+                let current = endNode;
+                // Trace back from the end to the start
+                while (current && (current.x !== playerPos.x || current.y !== playerPos.y)) {
+                    path.push(current);
+                    current = prev[current.y][current.x];
+                }
+                // Don't add the player's current cell to the solution path
+                // path.push(playerPos); // If you want to include the start cell
+
+                // Apply solution-path class to cells
+                for (const pos of path) {
+                    const cellEl = document.getElementById(`cell-${pos.x}-${pos.y}`);
+                    if (cellEl && !cellEl.classList.contains('player') && !cellEl.classList.contains('exit')) {
+                        cellEl.classList.add('solution-path');
+                    }
+                }
+            } else {
+                message.textContent = "No solution found from current position!";
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('up').addEventListener('click', () => movePlayer(0, -1));
+        document.getElementById('down').addEventListener('click', () => movePlayer(0, 1));
+        document.getElementById('left').addEventListener('click', () => movePlayer(-1, 0));
+        document.getElementById('right').addEventListener('click', () => movePlayer(1, 0));
+        document.getElementById('showSolution').addEventListener('click', showSolution);
+
+        // Keyboard controls (WASD and Arrow Keys)
+        document.addEventListener('keydown', (event) => {
+            // Prevent scrolling with arrow keys if playing the game
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                event.preventDefault();
+            }
+            switch (event.key) {
+                case 'ArrowUp':
+                case 'w':
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    movePlayer(1, 0);
+                    break;
+            }
+        });
+
+        // Initial draw of the first maze when the page loads
+        drawMaze();
+        message.textContent = 'Navigate the maze!';
+    </script>
 </body>
 </html>
